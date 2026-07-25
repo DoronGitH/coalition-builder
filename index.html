@@ -1700,6 +1700,10 @@
         };
 
         const updateParty = (id, field, value) => setParties(parties.map(p => p.id === id ? { ...p, [field]: value } : p));
+        const updatePartyPoll = (id, rawValue) => {
+          const parsedValue = Number(rawValue);
+          setParties(prevParties => prevParties.map(p => p.id === id ? { ...p, poll: parsedValue, votes: parsedValue } : p));
+        };
         const scenarioPolicyLibrary = selectedCountry && selectedScenario && db[selectedCountry] && db[selectedCountry][selectedScenario]
           ? hydrateScenarioPolicyLibrary(db[selectedCountry][selectedScenario]).policyLibrary
           : DEFAULT_POLICY_LIBRARY;
@@ -1746,7 +1750,10 @@
               </div>
             </div>
 
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.0rem' }}>
+              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Adjust each party’s Poll % here to test newer or conflicting polling scenarios before you move to the election stage.
+              </div>
               {parties.map(party => {
                 const isTemporaryParty = Boolean(party.isTemporary);
                 return (
@@ -1771,7 +1778,7 @@
                       </div>
                       <div className="sg-faction-field">
                         <label className="sg-label">Poll %</label>
-                        <input type="number" step="0.1" value={party.poll} onChange={(e) => { updateParty(party.id, 'poll', e.target.value); updateParty(party.id, 'votes', e.target.value); }} style={{ width: '78px', fontFamily: 'monospace', color: 'var(--gold-hi)' }}/>
+                        <input type="number" step="0.1" value={party.poll} onChange={(e) => updatePartyPoll(party.id, e.target.value)} style={{ width: '78px', fontFamily: 'monospace', color: 'var(--gold-hi)' }}/>
                       </div>
                       <div className="sg-faction-field" style={{ marginLeft: 'auto' }}>
                         <label className="sg-label">&nbsp;</label>

@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     }
 
     const octokit = new Octokit({ auth: token });
-    const [owner, repo] = (process.env.GITHUB_REPOSITORY || 'Doronshorer/coalition-builder').split('/');
+    const [owner, repo] = (process.env.GITHUB_REPOSITORY || 'DoronGitH/coalition-builder').split('/');
     const branch = process.env.GITHUB_BRANCH || 'main';
 
     const content = Buffer.from(JSON.stringify(db, null, 2) + '\n', 'utf8').toString('base64');

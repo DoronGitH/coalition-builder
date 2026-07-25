@@ -473,6 +473,388 @@
           "rules": []
         }
       ]
+    },
+    "2026 Theoretical Snapshot": {
+      "seats": 100,
+      "threshold": 5,
+      "parties": [
+        {
+          "id": 1,
+          "name": "New Party",
+          "color": "#555555",
+          "logo": "⬜",
+          "corePolicies": "",
+          "redLines": "",
+          "poll": 0,
+          "votes": 0
+        }
+      ],
+      "conflictConditions": [
+        {
+          "id": "core-vs-red",
+          "leftField": "corePolicies",
+          "rightField": "redLines",
+          "description": "Core policy conflicts with red lines",
+          "bidirectional": true
+        }
+      ],
+      "resolutionOptions": [
+        {
+          "id": "support",
+          "label": "Include Policy",
+          "titleTemplate": "Include \"{policy}\"",
+          "effectTemplate": "{party1}'s core demand is accepted into the government platform. {party2} must compromise.",
+          "summaryText": "Policy demand from one party accepted"
+        },
+        {
+          "id": "drop",
+          "label": "Exclude Policy",
+          "titleTemplate": "Exclude \"{policy}\"",
+          "effectTemplate": "The policy is dropped from the government platform. {party1} accepts the exclusion.",
+          "summaryText": "Contested policy dropped from platform"
+        },
+        {
+          "id": "compromise",
+          "label": "Compromise Version",
+          "titleTemplate": "Modified/Compromise Version",
+          "effectTemplate": "A compromise version of \"{policy}\" is negotiated that both parties can accept.",
+          "summaryText": "Compromise version negotiated between parties"
+        }
+      ],
+      "conflictOverrides": [],
+      "policyLibrary": [
+        {
+          "id": "haredi-draft-exemption",
+          "label": "Haredi Draft Exemption",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-haredi-draft-exemption-impasse",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "palestinian-state",
+          "label": "Palestinian state",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-palestinian-state-impasse",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "far-right",
+          "label": "Far-Right",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-far-right-impasse",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "islamism",
+          "label": "Islamism",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-islamism-impasse",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "annexation",
+          "label": "Annexation",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-annexation-impasse",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "judicial-overhaul",
+          "label": "Judicial Overhaul",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-judicial-overhaul-impasse",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "zionism",
+          "label": "Zionism",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-zionism-impasse",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "secularism",
+          "label": "Secularism",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-secularism-negotiate",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "progressivism",
+          "label": "Progressivism",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-progressivism-negotiate",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "settlement-expansion",
+          "label": "Settlement Expansion",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-settlement-expansion-negotiate",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "conservatism",
+          "label": "Conservatism",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-conservatism-negotiate",
+              "demanderParty": "",
+              "blockerParty": "",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": []
+            }
+          ]
+        },
+        {
+          "id": "benjamin-netanyahu",
+          "label": "Benjamin Netanyahu",
+          "aliases": "",
+          "rules": [
+            {
+              "id": "rule-netanyahu-hard-democrats",
+              "demanderParty": "",
+              "blockerParty": "democrats",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            },
+            {
+              "id": "rule-netanyahu-hard-hadash-ta'al",
+              "demanderParty": "",
+              "blockerParty": "hadash-ta'al",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            },
+            {
+              "id": "rule-netanyahu-hard-ra'am",
+              "demanderParty": "",
+              "blockerParty": "ra'am",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            },
+            {
+              "id": "rule-netanyahu-hard-yisrael-beiteinu",
+              "demanderParty": "",
+              "blockerParty": "yisrael beiteinu",
+              "mode": "impasse",
+              "descriptionTemplate": "{party2} is not open to nagotiating {policy}, we're at an impass!",
+              "resolutionOptions": []
+            },
+            {
+              "id": "rule-netanyahu-negotiate-yashar",
+              "demanderParty": "",
+              "blockerParty": "yashar",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": [
+                {
+                  "id": "support",
+                  "label": "Include Policy",
+                  "titleTemplate": "Include \"{policy}\"",
+                  "effectTemplate": "{party1}'s core demand is accepted into the government platform. {party2} must compromise.",
+                  "summaryText": "Policy demand from one party accepted"
+                },
+                {
+                  "id": "drop",
+                  "label": "Exclude Policy",
+                  "titleTemplate": "Exclude \"{policy}\"",
+                  "effectTemplate": "The policy is dropped from the government platform. {party1} accepts the exclusion.",
+                  "summaryText": "Contested policy dropped from platform"
+                },
+                {
+                  "id": "compromise",
+                  "label": "Compromise Version",
+                  "titleTemplate": "Modified/Compromise Version",
+                  "effectTemplate": "A compromise version of \"{policy}\" is negotiated that both parties can accept.",
+                  "summaryText": "Compromise version negotiated between parties"
+                },
+                {
+                  "id": "netanyahu-steps-down",
+                  "label": "Netanyahu Steps Down",
+                  "titleTemplate": "Netanyahu steps down, Likud stays",
+                  "effectTemplate": "{party2} demands Netanyahu step down and let Likud join the coalition without him.",
+                  "summaryText": "Netanyahu steps down and Likud remains in the coalition"
+                }
+              ]
+            },
+            {
+              "id": "rule-netanyahu-negotiate-beyachad",
+              "demanderParty": "",
+              "blockerParty": "beyachad",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": [
+                {
+                  "id": "support",
+                  "label": "Include Policy",
+                  "titleTemplate": "Include \"{policy}\"",
+                  "effectTemplate": "{party1}'s core demand is accepted into the government platform. {party2} must compromise.",
+                  "summaryText": "Policy demand from one party accepted"
+                },
+                {
+                  "id": "drop",
+                  "label": "Exclude Policy",
+                  "titleTemplate": "Exclude \"{policy}\"",
+                  "effectTemplate": "The policy is dropped from the government platform. {party1} accepts the exclusion.",
+                  "summaryText": "Contested policy dropped from platform"
+                },
+                {
+                  "id": "compromise",
+                  "label": "Compromise Version",
+                  "titleTemplate": "Modified/Compromise Version",
+                  "effectTemplate": "A compromise version of \"{policy}\" is negotiated that both parties can accept.",
+                  "summaryText": "Compromise version negotiated between parties"
+                },
+                {
+                  "id": "netanyahu-steps-down",
+                  "label": "Netanyahu Steps Down",
+                  "titleTemplate": "Netanyahu steps down, Likud stays",
+                  "effectTemplate": "{party2} demands Netanyahu step down and let Likud join the coalition without him.",
+                  "summaryText": "Netanyahu steps down and Likud remains in the coalition"
+                }
+              ]
+            },
+            {
+              "id": "rule-netanyahu-negotiate-national-unity",
+              "demanderParty": "",
+              "blockerParty": "national unity",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": [
+                {
+                  "id": "support",
+                  "label": "Include Policy",
+                  "titleTemplate": "Include \"{policy}\"",
+                  "effectTemplate": "{party1}'s core demand is accepted into the government platform. {party2} must compromise.",
+                  "summaryText": "Policy demand from one party accepted"
+                },
+                {
+                  "id": "drop",
+                  "label": "Exclude Policy",
+                  "titleTemplate": "Exclude \"{policy}\"",
+                  "effectTemplate": "The policy is dropped from the government platform. {party1} accepts the exclusion.",
+                  "summaryText": "Contested policy dropped from platform"
+                },
+                {
+                  "id": "compromise",
+                  "label": "Compromise Version",
+                  "titleTemplate": "Modified/Compromise Version",
+                  "effectTemplate": "A compromise version of \"{policy}\" is negotiated that both parties can accept.",
+                  "summaryText": "Compromise version negotiated between parties"
+                },
+                {
+                  "id": "netanyahu-steps-down",
+                  "label": "Netanyahu Steps Down",
+                  "titleTemplate": "Netanyahu steps down, Likud stays",
+                  "effectTemplate": "{party2} demands Netanyahu step down and let Likud join the coalition without him.",
+                  "summaryText": "Netanyahu steps down and Likud remains in the coalition"
+                }
+              ]
+            },
+            {
+              "id": "rule-netanyahu-negotiate-ha-miluimnikim",
+              "demanderParty": "",
+              "blockerParty": "ha-miluimnikim",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": []
+            },
+            {
+              "id": "rule-netanyahu-negotiate-kachol-lavan",
+              "demanderParty": "",
+              "blockerParty": "kachol lavan",
+              "mode": "negotiate",
+              "descriptionTemplate": "{party2} rejects {party1}'s policy of {policy}, we must nagotiate!",
+              "resolutionOptions": []
+            }
+          ]
+        }
+      ]
     }
   }
 }

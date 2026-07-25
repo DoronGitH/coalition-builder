@@ -9,8 +9,8 @@
           "name": "Likud",
           "color": "#ff0000",
           "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Likud_Logo.svg/250px-Likud_Logo.svg.png",
-          "corePolicies": "Zionism, Settlement Expansion, Judicial Overhaul",
-          "redLines": "\"Bibi\", Islamism",
+          "corePolicies": "Zionism, Settlement Expansion, Judicial Overhaul, Benjamin Netanyahu",
+          "redLines": "",
           "poll": 21,
           "votes": 21
         },
@@ -548,12 +548,6 @@
         {
           "id": "policy-arab-interests",
           "label": "Arab Interests",
-          "aliases": "",
-          "rules": []
-        },
-        {
-          "id": "policy-bibi",
-          "label": "\"Bibi\"",
           "aliases": "",
           "rules": []
         }

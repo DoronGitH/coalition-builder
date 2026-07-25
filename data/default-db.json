@@ -20,7 +20,7 @@
           "color": "#0055ff",
           "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Together-logo-29April.svg/250px-Together-logo-29April.svg.png?utm_source=he.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
           "corePolicies": "Settlement Expansion, Conservatism",
-          "redLines": "",
+          "redLines": "Benjamin Netanyahu, Far-Right",
           "poll": 14,
           "votes": 14
         },
@@ -498,12 +498,6 @@
           ]
         },
         {
-          "id": "policy-bibi",
-          "label": "\"Bibi\"",
-          "aliases": "",
-          "rules": []
-        },
-        {
           "id": "policy-social-democracy",
           "label": "Social Democracy",
           "aliases": "",
@@ -524,6 +518,12 @@
         {
           "id": "policy-arab-interests",
           "label": "Arab Interests",
+          "aliases": "",
+          "rules": []
+        },
+        {
+          "id": "policy-bibi",
+          "label": "\"Bibi\"",
           "aliases": "",
           "rules": []
         }

@@ -657,6 +657,7 @@
       const [newScenario, setNewScenario] = useState('');
       const [showExport, setShowExport] = useState(false);
       const [saveStatus, setSaveStatus] = useState('');
+      const [ideologyDraft, setIdeologyDraft] = useState({ name: '', icon: '⚖️', description: '', interactionRules: [{ targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] });
 
       useEffect(() => {
         if (activeC && db[activeC] && !db[activeC][activeS]) {
@@ -667,6 +668,52 @@
       const updateDb = (newDb) => {
         setDb(newDb);
         localStorage.setItem('coalitionDb', JSON.stringify(newDb));
+      };
+
+      const updateScenarioIdeologies = (nextIdeologies) => {
+        const newDb = { ...db };
+        if (!newDb[activeC]?.[activeS]) return;
+        newDb[activeC][activeS].ideologyLibrary = nextIdeologies;
+        updateDb(newDb);
+      };
+
+      const addIdeology = () => {
+        if (!ideologyDraft.name.trim()) return;
+        const nextIdeologies = [
+          ...(activeScenarioConfig.ideologyLibrary || []),
+          {
+            id: `ideology-${Date.now()}`,
+            name: ideologyDraft.name.trim(),
+            icon: ideologyDraft.icon.trim() || '⚖️',
+            description: ideologyDraft.description.trim(),
+            interactionRules: (ideologyDraft.interactionRules || [])
+              .filter((rule) => rule.targetIdeologyId && rule.targetIdeologyId.trim())
+              .map((rule) => ({
+                targetIdeologyId: rule.targetIdeologyId,
+                penaltyPerSeat: Number(rule.penaltyPerSeat) || 0,
+                description: rule.description.trim()
+              }))
+          }
+        ];
+        updateScenarioIdeologies(nextIdeologies);
+        setIdeologyDraft({ name: '', icon: '⚖️', description: '', interactionRules: [{ targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] });
+      };
+
+      const removeIdeology = (id) => {
+        const nextIdeologies = (activeScenarioConfig.ideologyLibrary || []).filter((ideology) => ideology.id !== id);
+        updateScenarioIdeologies(nextIdeologies);
+      };
+
+      const updatePartyIdeologyAssignment = (partyId, categoryKey, ideologyId) => {
+        const newDb = { ...db };
+        const party = newDb[activeC]?.[activeS]?.parties?.find((item) => item.id === partyId);
+        if (!party) return;
+        const nextAssignments = {
+          ...(party.ideologyAssignments || buildDefaultPartyIdeologyAssignments()),
+          [categoryKey]: ideologyId || ''
+        };
+        party.ideologyAssignments = nextAssignments;
+        updateDb(newDb);
       };
 
       const updateParty = (partyId, field, val) => {
@@ -1148,6 +1195,61 @@
                   </div>
 
                   <div className="space-y-4">
+                    <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                      <div className="flex justify-between items-center mb-3">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">Preset Ideology Library</h3>
+                          <p className="text-xs text-slate-400 mt-1">Create the ideology definitions here so they are saved with this preset and available to the game.</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
+                        <input type="text" value={ideologyDraft.name} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, name: e.target.value })} placeholder="Ideology name" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
+                        <input type="text" value={ideologyDraft.icon} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, icon: e.target.value })} placeholder="Icon (emoji or symbol)" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
+                      </div>
+                      <textarea value={ideologyDraft.description} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, description: e.target.value })} placeholder="Describe the ideology and its role in the preset" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm mb-3" rows="3" />
+                      <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-3 mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Coalition penalties</h4>
+                          <button onClick={() => setIdeologyDraft({ ...ideologyDraft, interactionRules: [...(ideologyDraft.interactionRules || []), { targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] })} className="text-xs font-bold text-cyan-400">+ Add Rule</button>
+                        </div>
+                        {(ideologyDraft.interactionRules || []).map((rule, index) => (
+                          <div key={index} className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-2">
+                            <select value={rule.targetIdeologyId} onChange={(e) => { const nextRules = [...(ideologyDraft.interactionRules || [])]; nextRules[index] = { ...nextRules[index], targetIdeologyId: e.target.value }; setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules }); }} className="w-full bg-slate-800 text-white px-3 py-2 rounded border border-slate-700 text-sm">
+                              <option value="">— Select target ideology —</option>
+                              {(activeScenarioConfig.ideologyLibrary || []).map((option) => (
+                                <option key={option.id} value={option.id}>{option.name}</option>
+                              ))}
+                            </select>
+                            <input type="number" step="0.1" value={rule.penaltyPerSeat} onChange={(e) => { const nextRules = [...(ideologyDraft.interactionRules || [])]; nextRules[index] = { ...nextRules[index], penaltyPerSeat: Number(e.target.value) }; setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules }); }} placeholder="Penalty per seat" className="w-full bg-slate-800 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
+                            <input type="text" value={rule.description} onChange={(e) => { const nextRules = [...(ideologyDraft.interactionRules || [])]; nextRules[index] = { ...nextRules[index], description: e.target.value }; setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules }); }} placeholder="Example: lose 0.2% for every conservative seat" className="w-full bg-slate-800 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
+                          </div>
+                        ))}
+                      </div>
+                      <button onClick={addIdeology} className="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded font-bold">✚ Add Ideology</button>
+                      <div className="mt-3 space-y-2">
+                        {(activeScenarioConfig.ideologyLibrary || []).map((ideology) => (
+                          <div key={ideology.id} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-300">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-bold text-white">{ideology.icon} {ideology.name}</div>
+                                {ideology.description && <div className="mt-1 text-xs text-slate-400">{ideology.description}</div>}
+                              </div>
+                              <button onClick={() => removeIdeology(ideology.id)} className="text-red-400">✕</button>
+                            </div>
+                            {(ideology.interactionRules || []).length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {(ideology.interactionRules || []).map((rule, index) => (
+                                  <div key={index} className="rounded-full border border-cyan-800 bg-cyan-950/60 px-2 py-1 text-[11px] text-cyan-300">
+                                    {rule.description || `Lose ${rule.penaltyPerSeat}% for each ${getIdeologyById(activeScenarioConfig.ideologyLibrary, rule.targetIdeologyId)?.name || 'target'} seat`}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                     {db[activeC][activeS].parties.map((party) => (
                       <div key={party.id} className="bg-slate-800 p-4 rounded-lg border-l-4 shadow-lg flex flex-col gap-3 relative" style={{ borderColor: party.color }}>
                         <button onClick={() => removeParty(party.id)} className="absolute top-2 right-2 text-slate-500 hover:text-red-500 bg-slate-900 rounded-full w-6 h-6 flex items-center justify-center text-xs">✕</button>
@@ -1186,6 +1288,22 @@
                           </div>
 
                           <div className="col-span-12 mt-2 pt-3 border-t border-slate-700/60">
+                            <div className="mb-3">
+                              <label className="text-[10px] font-bold text-cyan-400 uppercase block mb-2">Preset Ideology Assignments</label>
+                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                {IDEOLOGY_CATEGORY_DEFINITIONS.map((category) => (
+                                  <div key={category.key}>
+                                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{category.label}</label>
+                                    <select value={party.ideologyAssignments?.[category.key] || ''} onChange={(e) => updatePartyIdeologyAssignment(party.id, category.key, e.target.value || '')} className="w-full bg-slate-900 text-white px-2 py-2 rounded border border-slate-700 text-sm">
+                                      <option value="">— None —</option>
+                                      {(activeScenarioConfig.ideologyLibrary || []).map((ideology) => (
+                                        <option key={ideology.id} value={ideology.id}>{ideology.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                             <div className="mb-2">
                               <label className="text-[10px] font-bold text-cyan-400 uppercase block mb-1">Core Policies</label>
                               <div className="flex flex-wrap gap-2">
@@ -1758,7 +1876,8 @@
         };
 
         const syncScenarioParties = (nextParties) => {
-          setParties(nextParties);
+          const normalizedNextParties = (nextParties || []).map(normalizePartyIdeologyAssignments);
+          setParties(normalizedNextParties);
           setDb(prev => {
             const next = JSON.parse(JSON.stringify(prev));
             const country = selectedCountry || 'Custom';
@@ -1767,9 +1886,14 @@
             if (!next[country][scenario]) {
               next[country][scenario] = { seats: totalSeats, threshold, parties: [], ...defaultScenarioConfig() };
             }
-            next[country][scenario].parties = nextParties;
+            next[country][scenario].parties = normalizedNextParties;
             next[country][scenario].seats = totalSeats;
             next[country][scenario].threshold = threshold;
+            try {
+              localStorage.setItem('coalitionDb', JSON.stringify(next));
+            } catch (error) {
+              console.warn('Could not persist coalition DB to localStorage', error);
+            }
             return next;
           });
         };
@@ -1804,7 +1928,25 @@
               next[country][scenario] = { seats: totalSeats, threshold, parties: [], ...defaultScenarioConfig() };
             }
             next[country][scenario].ideologyLibrary = nextIdeologies;
+            try {
+              localStorage.setItem('coalitionDb', JSON.stringify(next));
+            } catch (error) {
+              console.warn('Could not persist ideology library to localStorage', error);
+            }
             return next;
+          });
+        };
+        const addIdeologyRuleToDraft = () => {
+          setIdeologyDraft((prev) => ({
+            ...prev,
+            interactionRules: [...(prev.interactionRules || []), { targetIdeologyId: '', penaltyPerSeat: 0, description: '' }]
+          }));
+        };
+        const updateIdeologyDraftRule = (index, field, value) => {
+          setIdeologyDraft((prev) => {
+            const nextRules = [...(prev.interactionRules || [])];
+            nextRules[index] = { ...nextRules[index], [field]: value };
+            return { ...prev, interactionRules: nextRules };
           });
         };
         const addIdeology = () => {
@@ -1837,7 +1979,7 @@
           : DEFAULT_POLICY_LIBRARY;
 
         const togglePartySettingTag = (id, field, label) => {
-          setParties(parties.map(p => {
+          const nextParties = parties.map(p => {
             if (p.id !== id) return p;
             const current = splitTagEntries(p[field]);
             const hasTag = current.some(item => normalizeKey(item) === normalizeKey(label));
@@ -1845,12 +1987,24 @@
               ? current.filter(item => normalizeKey(item) !== normalizeKey(label))
               : [...current, label];
             return { ...p, [field]: next.join(', ') };
-          }));
+          });
+          syncScenarioParties(nextParties);
         };
 
         const addParty = () => {
           const newId = parties.length ? Math.max(...parties.map(p => p.id)) + 1 : 1;
-          const nextParties = [...parties, { id: newId, name: 'New Party', color: '#94a3b8', logo: '⬜', corePolicies: '', redLines: '', votes: 0, poll: 0, isTemporary: true }];
+          const nextParties = [...parties, {
+            id: newId,
+            name: 'New Party',
+            color: '#94a3b8',
+            logo: '⬜',
+            corePolicies: '',
+            redLines: '',
+            votes: 0,
+            poll: 0,
+            isTemporary: true,
+            ideologyAssignments: buildDefaultPartyIdeologyAssignments()
+          }];
           syncScenarioParties(nextParties);
         };
         const removeParty = (id) => {
@@ -1886,61 +2040,56 @@
               <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 Adjust each party’s Poll % here to test newer or conflicting polling scenarios before you move to the election stage.
               </div>
-              <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-600">Preset Ideology Library</h3>
-                  <span className="text-xs text-slate-500">These are preset-owned ideology definitions for this scenario only</span>
+
+              <div className="mb-4 rounded-2xl border border-cyan-400/40 bg-slate-900/95 p-4 shadow-[0_0_0_1px_rgba(34,211,238,0.15)]">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Preset Ideology Library</h3>
+                    <p className="mt-1 text-xs text-slate-400">Create ideologies once and reuse them for coalition cohesion, party assignments, and future scenarios.</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
-                  <input type="text" value={ideologyDraft.name} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, name: e.target.value })} placeholder="Ideology name" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
-                  <input type="text" value={ideologyDraft.icon} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, icon: e.target.value })} placeholder="Icon (emoji or symbol)" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+
+                <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  <input type="text" value={ideologyDraft.name} onChange={(e) => setIdeologyDraft((prev) => ({ ...prev, name: e.target.value }))} placeholder="Ideology name" className="w-full bg-slate-950 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
+                  <input type="text" value={ideologyDraft.icon} onChange={(e) => setIdeologyDraft((prev) => ({ ...prev, icon: e.target.value }))} placeholder="Icon (emoji or symbol)" className="w-full bg-slate-950 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
                 </div>
-                <textarea value={ideologyDraft.description} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, description: e.target.value })} placeholder="Describe the ideology and its place in the political spectrum" className="w-full rounded border border-slate-300 px-3 py-2 text-sm mb-3" rows="3" />
-                <div className="rounded-xl border border-slate-200 bg-white p-3 mb-3">
+                <textarea value={ideologyDraft.description} onChange={(e) => setIdeologyDraft((prev) => ({ ...prev, description: e.target.value }))} placeholder="Describe the ideology and its role in the preset" className="mt-3 w-full bg-slate-950 text-white px-3 py-2 rounded border border-slate-700 text-sm" rows="3" />
+
+                <div className="mt-3 rounded-lg border border-slate-700 bg-slate-950/80 p-3">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Coalition penalties</h4>
-                    <button onClick={() => setIdeologyDraft({ ...ideologyDraft, interactionRules: [...(ideologyDraft.interactionRules || []), { targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] })} className="text-xs font-bold text-indigo-600">+ Add Rule</button>
+                    <button onClick={addIdeologyRuleToDraft} className="text-xs font-bold text-cyan-400">+ Add Rule</button>
                   </div>
                   {(ideologyDraft.interactionRules || []).map((rule, index) => (
-                    <div key={index} className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-2">
-                      <select value={rule.targetIdeologyId} onChange={(e) => {
-                        const nextRules = [...(ideologyDraft.interactionRules || [])];
-                        nextRules[index] = { ...nextRules[index], targetIdeologyId: e.target.value };
-                        setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules });
-                      }} className="w-full rounded border border-slate-300 px-3 py-2 text-sm">
+                    <div key={index} className="mb-2 grid grid-cols-1 gap-2 lg:grid-cols-3">
+                      <select value={rule.targetIdeologyId} onChange={(e) => updateIdeologyDraftRule(index, 'targetIdeologyId', e.target.value)} className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm">
                         <option value="">— Select target ideology —</option>
                         {(activeScenarioData.ideologyLibrary || []).map((option) => (
                           <option key={option.id} value={option.id}>{option.name}</option>
                         ))}
                       </select>
-                      <input type="number" step="0.1" value={rule.penaltyPerSeat} onChange={(e) => {
-                        const nextRules = [...(ideologyDraft.interactionRules || [])];
-                        nextRules[index] = { ...nextRules[index], penaltyPerSeat: Number(e.target.value) };
-                        setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules });
-                      }} placeholder="Penalty per seat" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
-                      <input type="text" value={rule.description} onChange={(e) => {
-                        const nextRules = [...(ideologyDraft.interactionRules || [])];
-                        nextRules[index] = { ...nextRules[index], description: e.target.value };
-                        setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules });
-                      }} placeholder="Example: lose 0.2% for every conservative seat" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                      <input type="number" step="0.1" value={rule.penaltyPerSeat} onChange={(e) => updateIdeologyDraftRule(index, 'penaltyPerSeat', Number(e.target.value))} placeholder="Penalty per seat" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
+                      <input type="text" value={rule.description} onChange={(e) => updateIdeologyDraftRule(index, 'description', e.target.value)} placeholder="Example: lose 0.2% for every conservative seat" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
                     </div>
                   ))}
                 </div>
-                <button onClick={addIdeology} className="sg-btn">✚ Add Ideology</button>
+
+                <button onClick={addIdeology} className="mt-3 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded font-bold">✚ Add Ideology</button>
+
                 <div className="mt-3 space-y-2">
                   {(activeScenarioData.ideologyLibrary || []).map((ideology) => (
-                    <div key={ideology.id} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                    <div key={ideology.id} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-300">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="font-bold text-slate-900">{ideology.icon} {ideology.name}</div>
-                          {ideology.description && <div className="mt-1 text-xs text-slate-500">{ideology.description}</div>}
+                          <div className="font-bold text-white">{ideology.icon} {ideology.name}</div>
+                          {ideology.description && <div className="mt-1 text-xs text-slate-400">{ideology.description}</div>}
                         </div>
-                        <button onClick={() => removeIdeology(ideology.id)} className="text-red-500">✕</button>
+                        <button onClick={() => removeIdeology(ideology.id)} className="text-red-400">✕</button>
                       </div>
                       {(ideology.interactionRules || []).length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-2">
                           {(ideology.interactionRules || []).map((rule, index) => (
-                            <div key={index} className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] text-indigo-700">
+                            <div key={index} className="rounded-full border border-cyan-800 bg-cyan-950/60 px-2 py-1 text-[11px] text-cyan-300">
                               {rule.description || `Lose ${rule.penaltyPerSeat}% for each ${getIdeologyById(activeScenarioData.ideologyLibrary, rule.targetIdeologyId)?.name || 'target'} seat`}
                             </div>
                           ))}
@@ -1950,6 +2099,7 @@
                   ))}
                 </div>
               </div>
+
               {parties.map(party => {
                 const isTemporaryParty = Boolean(party.isTemporary);
                 return (
@@ -1976,25 +2126,26 @@
                         <label className="sg-label">Poll %</label>
                         <input type="number" step="0.1" value={party.poll} onChange={(e) => updatePartyPoll(party.id, e.target.value)} style={{ width: '78px', fontFamily: 'monospace', color: 'var(--gold-hi)' }}/>
                       </div>
-                      <div className="sg-faction-field" style={{ minWidth: '220px' }}>
-                        <label className="sg-label">Ideologies</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {IDEOLOGY_CATEGORY_DEFINITIONS.map((category) => (
-                            <div key={category.key}>
-                              <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{category.label}</label>
-                              <select value={party.ideologyAssignments?.[category.key] || ''} onChange={(e) => updatePartyIdeologyAssignment(party.id, category.key, e.target.value || '')} style={{ width: '100%', padding: '0.35rem 0.45rem' }}>
-                                <option value="">— None —</option>
-                                {(activeScenarioData.ideologyLibrary || []).map((ideology) => (
-                                  <option key={ideology.id} value={ideology.id}>{ideology.name}</option>
-                                ))}
-                              </select>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
                       <div className="sg-faction-field" style={{ marginLeft: 'auto' }}>
                         <label className="sg-label">&nbsp;</label>
                         <button onClick={() => removeParty(party.id)} className="sg-btn sg-btn-remove">✕ Remove</button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/70 p-3">
+                      <label className="text-[10px] font-bold text-cyan-400 uppercase block mb-2">Preset Ideology Assignments</label>
+                      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                        {IDEOLOGY_CATEGORY_DEFINITIONS.map((category) => (
+                          <div key={category.key}>
+                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{category.label}</label>
+                            <select value={party.ideologyAssignments?.[category.key] || ''} onChange={(e) => updatePartyIdeologyAssignment(party.id, category.key, e.target.value || '')} className="w-full bg-slate-900 text-white px-2 py-2 rounded border border-slate-700 text-sm">
+                              <option value="">— None —</option>
+                              {(activeScenarioData.ideologyLibrary || []).map((ideology) => (
+                                <option key={ideology.id} value={ideology.id}>{ideology.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>

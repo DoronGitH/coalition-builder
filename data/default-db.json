@@ -14,8 +14,8 @@
           "poll": 21,
           "votes": 21,
           "ideologyAssignments": {
-            "social": "ideology-1785147127149",
-            "economic": "ideology-1785147127149",
+            "social": "ideology-1785148293369",
+            "economic": "ideology-1785148467411",
             "security": "ideology-1785147127149",
             "cultural": "ideology-1785147127149"
           }
@@ -560,8 +560,127 @@
       ],
       "ideologyLibrary": [
         {
-          "id": "ideology-1785147127149",
-          "name": "Cat",
+          "id": "ideology-1785148293369",
+          "name": "Conservative",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148305344",
+          "name": "Social Democrat",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148311649",
+          "name": "Traditionalist",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148335377",
+          "name": "Progressive",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148353007",
+          "name": "Secular",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148358463",
+          "name": "Jewish religious",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148365805",
+          "name": "Muslim religious",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148397727",
+          "name": "Communist",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148458971",
+          "name": "Free market",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148467411",
+          "name": "Liberal capitalism",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148503961",
+          "name": "Austerity",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148534550",
+          "name": "Protectionist",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148566424",
+          "name": "Socialism",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148570404",
+          "name": "Welfare capitalism",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148647349",
+          "name": "Militarist",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148655985",
+          "name": "isolationist",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148666361",
+          "name": "Expansionist",
+          "icon": "⚖️",
+          "description": "",
+          "interactionRules": []
+        },
+        {
+          "id": "ideology-1785148729509",
+          "name": "Defensive",
           "icon": "⚖️",
           "description": "",
           "interactionRules": []

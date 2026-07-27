@@ -14,10 +14,10 @@
           "poll": 21,
           "votes": 21,
           "ideologyAssignments": {
-            "social": "ideology-1785146936093",
-            "economic": "",
-            "security": "",
-            "cultural": ""
+            "social": "ideology-1785147127149",
+            "economic": "ideology-1785147127149",
+            "security": "ideology-1785147127149",
+            "cultural": "ideology-1785147127149"
           }
         },
         {
@@ -560,10 +560,10 @@
       ],
       "ideologyLibrary": [
         {
-          "id": "ideology-1785146936093",
-          "name": "cat",
+          "id": "ideology-1785147127149",
+          "name": "Cat",
           "icon": "⚖️",
-          "description": "D",
+          "description": "",
           "interactionRules": []
         }
       ]

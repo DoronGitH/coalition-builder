@@ -252,6 +252,7 @@
 
     const ensureScenarioConfig = (scenario) => ({
       ...scenario,
+      ideologyLibrary: Array.isArray(scenario?.ideologyLibrary) ? scenario.ideologyLibrary : [],
       conflictConditions: Array.isArray(scenario?.conflictConditions) && scenario.conflictConditions.length
         ? scenario.conflictConditions
         : DEFAULT_CONFLICT_CONDITIONS,
@@ -698,6 +699,7 @@
       };
 
       const defaultScenarioConfig = () => ({
+        ideologyLibrary: [],
         conflictConditions: JSON.parse(JSON.stringify(DEFAULT_CONFLICT_CONDITIONS)),
         resolutionOptions: JSON.parse(JSON.stringify(DEFAULT_RESOLUTION_OPTIONS)),
         conflictOverrides: [],
@@ -1539,34 +1541,58 @@
     // MAIN APP COMPONENT
     // ============================================
 
-    const IDEOLOGY_CATEGORIES = ['social', 'economical', 'security', 'cultural'];
+    const IDEOLOGY_CATEGORY_DEFINITIONS = [
+      { key: 'social', label: 'Social' },
+      { key: 'economic', label: 'Economic' },
+      { key: 'security', label: 'Security' },
+      { key: 'cultural', label: 'Cultural' }
+    ];
 
-    const calculateGovernmentCohesion = (coalitionMembers, ideologies = []) => {
-      const ideologyMap = new Map((ideologies || []).map((ideology) => [ideology.id, ideology]));
-      const assignedIdeologies = coalitionMembers
-        .filter((party) => party.ideologyId && ideologyMap.has(party.ideologyId))
-        .map((party) => ideologyMap.get(party.ideologyId));
+    const buildDefaultPartyIdeologyAssignments = () => IDEOLOGY_CATEGORY_DEFINITIONS.reduce((acc, category) => {
+      acc[category.key] = '';
+      return acc;
+    }, {});
 
+    const normalizePartyIdeologyAssignments = (party) => {
+      const defaults = buildDefaultPartyIdeologyAssignments();
+      const incoming = party?.ideologyAssignments && typeof party.ideologyAssignments === 'object' ? party.ideologyAssignments : {};
+      Object.entries(incoming).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) defaults[key] = value;
+      });
+      return { ...party, ideologyAssignments: defaults };
+    };
+
+    const getPartyAssignedIdeologies = (party, ideologyLibrary = []) => {
+      const assignments = party?.ideologyAssignments || {};
+      return IDEOLOGY_CATEGORY_DEFINITIONS
+        .map((category) => {
+          const ideologyId = assignments?.[category.key];
+          if (!ideologyId) return null;
+          const ideology = (ideologyLibrary || []).find((item) => item.id === ideologyId);
+          return ideology ? { category: category.key, categoryLabel: category.label, ideologyId, ideology } : null;
+        })
+        .filter(Boolean);
+    };
+
+    const getIdeologyById = (ideologyLibrary = [], ideologyId) => (ideologyLibrary || []).find((ideology) => ideology.id === ideologyId);
+
+    const calculateGovernmentCohesion = (coalitionMembers, ideologyLibrary = []) => {
+      const assignedIdeologies = coalitionMembers.flatMap((party) => getPartyAssignedIdeologies(party, ideologyLibrary));
       if (assignedIdeologies.length < 2) return null;
 
-      const pairs = [];
-      for (let i = 0; i < assignedIdeologies.length; i++) {
-        for (let j = i + 1; j < assignedIdeologies.length; j++) {
-          pairs.push([assignedIdeologies[i], assignedIdeologies[j]]);
-        }
-      }
+      let totalPenalty = 0;
+      assignedIdeologies.forEach(({ ideology }) => {
+        (ideology?.interactionRules || []).forEach((rule) => {
+          if (!rule.targetIdeologyId) return;
+          const targetSeatCount = coalitionMembers.reduce((sum, member) => {
+            const hasTarget = getPartyAssignedIdeologies(member, ideologyLibrary).some((item) => item.ideologyId === rule.targetIdeologyId);
+            return sum + (hasTarget ? (Number(member.seats) || 0) : 0);
+          }, 0);
+          totalPenalty += (Number(rule.penaltyPerSeat) || 0) * targetSeatCount;
+        });
+      });
 
-      if (!pairs.length) return null;
-
-      const totalDistance = pairs.reduce((sum, [left, right]) => {
-        return sum + IDEOLOGY_CATEGORIES.reduce((categorySum, category) => {
-          return categorySum + Math.abs((left[category] || 0) - (right[category] || 0));
-        }, 0);
-      }, 0);
-
-      const maxDistance = pairs.length * IDEOLOGY_CATEGORIES.length * 6;
-      if (maxDistance === 0) return 100;
-      return Math.max(0, Math.round(100 - (totalDistance / maxDistance) * 100));
+      return Math.max(0, Math.round(100 - totalPenalty));
     };
 
     function App() {
@@ -1602,7 +1628,7 @@
       const [showNoCoalitionModal, setShowNoCoalitionModal] = useState(false);
       const [showHowToPlay, setShowHowToPlay] = useState(false);
       const [expandedPartyDetails, setExpandedPartyDetails] = useState({});
-      const [ideologyDraft, setIdeologyDraft] = useState({ name: '', description: '', social: 0, economical: 0, security: 0, cultural: 0 });
+      const [ideologyDraft, setIdeologyDraft] = useState({ name: '', icon: '⚖️', description: '', interactionRules: [{ targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] });
 
       const resetGame = () => { setCoalition([]); setScreen('HOME'); setDecisions({}); };
 
@@ -1722,12 +1748,12 @@
         const handleScenarioChange = (country, scenario) => {
           setSelectedCountry(country); setSelectedScenario(scenario);
           if (country === 'Custom') {
-            setParties([{ id: 1, name: 'New Party', color: '#94a3b8', logo: '⬜', corePolicies: '', redLines: '', poll: 0, votes: 0, isTemporary: true }]);
+            setParties([{ id: 1, name: 'New Party', color: '#94a3b8', logo: '⬜', corePolicies: '', redLines: '', poll: 0, votes: 0, isTemporary: true, ideologyAssignments: buildDefaultPartyIdeologyAssignments() }]);
             setTotalSeats(100); setThreshold(5); return;
           }
           if (db[country] && db[country][scenario]) {
             const data = db[country][scenario];
-            setTotalSeats(data.seats); setThreshold(data.threshold); setParties(JSON.parse(JSON.stringify(data.parties)));
+            setTotalSeats(data.seats); setThreshold(data.threshold); setParties((data.parties || []).map(normalizePartyIdeologyAssignments));
           }
         };
 
@@ -1757,8 +1783,15 @@
           const nextParties = parties.map((party) => party.id === id ? { ...party, poll: parsedValue, votes: parsedValue } : party);
           syncScenarioParties(nextParties);
         };
-        const updatePartyIdeology = (id, ideologyId) => {
-          const nextParties = parties.map((party) => party.id === id ? { ...party, ideologyId } : party);
+        const updatePartyIdeologyAssignment = (id, categoryKey, ideologyId) => {
+          const nextParties = parties.map((party) => {
+            if (party.id !== id) return party;
+            const nextAssignments = {
+              ...(party.ideologyAssignments || buildDefaultPartyIdeologyAssignments()),
+              [categoryKey]: ideologyId || ''
+            };
+            return { ...party, ideologyAssignments: nextAssignments };
+          });
           syncScenarioParties(nextParties);
         };
         const updateScenarioIdeologies = (nextIdeologies) => {
@@ -1770,29 +1803,33 @@
             if (!next[country][scenario]) {
               next[country][scenario] = { seats: totalSeats, threshold, parties: [], ...defaultScenarioConfig() };
             }
-            next[country][scenario].ideologies = nextIdeologies;
+            next[country][scenario].ideologyLibrary = nextIdeologies;
             return next;
           });
         };
         const addIdeology = () => {
           if (!ideologyDraft.name.trim()) return;
           const nextIdeologies = [
-            ...(activeScenarioData.ideologies || []),
+            ...(activeScenarioData.ideologyLibrary || []),
             {
               id: `ideology-${Date.now()}`,
               name: ideologyDraft.name.trim(),
+              icon: ideologyDraft.icon.trim() || '⚖️',
               description: ideologyDraft.description.trim(),
-              social: Number(ideologyDraft.social) || 0,
-              economical: Number(ideologyDraft.economical) || 0,
-              security: Number(ideologyDraft.security) || 0,
-              cultural: Number(ideologyDraft.cultural) || 0
+              interactionRules: (ideologyDraft.interactionRules || [])
+                .filter((rule) => rule.targetIdeologyId && rule.targetIdeologyId.trim())
+                .map((rule) => ({
+                  targetIdeologyId: rule.targetIdeologyId,
+                  penaltyPerSeat: Number(rule.penaltyPerSeat) || 0,
+                  description: rule.description.trim()
+                }))
             }
           ];
           updateScenarioIdeologies(nextIdeologies);
-          setIdeologyDraft({ name: '', description: '', social: 0, economical: 0, security: 0, cultural: 0 });
+          setIdeologyDraft({ name: '', icon: '⚖️', description: '', interactionRules: [{ targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] });
         };
         const removeIdeology = (id) => {
-          const nextIdeologies = (activeScenarioData.ideologies || []).filter((ideology) => ideology.id !== id);
+          const nextIdeologies = (activeScenarioData.ideologyLibrary || []).filter((ideology) => ideology.id !== id);
           updateScenarioIdeologies(nextIdeologies);
         };
         const scenarioPolicyLibrary = selectedCountry && selectedScenario && db[selectedCountry] && db[selectedCountry][selectedScenario]
@@ -1851,28 +1888,64 @@
               </div>
               <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-600">Ideology Library</h3>
-                  <span className="text-xs text-slate-500">Create and save belief profiles for this scenario</span>
+                  <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-600">Preset Ideology Library</h3>
+                  <span className="text-xs text-slate-500">These are preset-owned ideology definitions for this scenario only</span>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
                   <input type="text" value={ideologyDraft.name} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, name: e.target.value })} placeholder="Ideology name" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
-                  <input type="text" value={ideologyDraft.description} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, description: e.target.value })} placeholder="Short description" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                  <input type="text" value={ideologyDraft.icon} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, icon: e.target.value })} placeholder="Icon (emoji or symbol)" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-                  {IDEOLOGY_CATEGORIES.map((category) => (
-                    <div key={category}>
-                      <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">{category}</label>
-                      <input type="range" min="-3" max="3" value={ideologyDraft[category]} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, [category]: Number(e.target.value) })} className="w-full accent-indigo-600" />
-                      <div className="mt-1 text-center text-xs font-mono text-slate-600">{ideologyDraft[category]}</div>
+                <textarea value={ideologyDraft.description} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, description: e.target.value })} placeholder="Describe the ideology and its place in the political spectrum" className="w-full rounded border border-slate-300 px-3 py-2 text-sm mb-3" rows="3" />
+                <div className="rounded-xl border border-slate-200 bg-white p-3 mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Coalition penalties</h4>
+                    <button onClick={() => setIdeologyDraft({ ...ideologyDraft, interactionRules: [...(ideologyDraft.interactionRules || []), { targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] })} className="text-xs font-bold text-indigo-600">+ Add Rule</button>
+                  </div>
+                  {(ideologyDraft.interactionRules || []).map((rule, index) => (
+                    <div key={index} className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-2">
+                      <select value={rule.targetIdeologyId} onChange={(e) => {
+                        const nextRules = [...(ideologyDraft.interactionRules || [])];
+                        nextRules[index] = { ...nextRules[index], targetIdeologyId: e.target.value };
+                        setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules });
+                      }} className="w-full rounded border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">— Select target ideology —</option>
+                        {(activeScenarioData.ideologyLibrary || []).map((option) => (
+                          <option key={option.id} value={option.id}>{option.name}</option>
+                        ))}
+                      </select>
+                      <input type="number" step="0.1" value={rule.penaltyPerSeat} onChange={(e) => {
+                        const nextRules = [...(ideologyDraft.interactionRules || [])];
+                        nextRules[index] = { ...nextRules[index], penaltyPerSeat: Number(e.target.value) };
+                        setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules });
+                      }} placeholder="Penalty per seat" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+                      <input type="text" value={rule.description} onChange={(e) => {
+                        const nextRules = [...(ideologyDraft.interactionRules || [])];
+                        nextRules[index] = { ...nextRules[index], description: e.target.value };
+                        setIdeologyDraft({ ...ideologyDraft, interactionRules: nextRules });
+                      }} placeholder="Example: lose 0.2% for every conservative seat" className="w-full rounded border border-slate-300 px-3 py-2 text-sm" />
                     </div>
                   ))}
                 </div>
                 <button onClick={addIdeology} className="sg-btn">✚ Add Ideology</button>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(activeScenarioData.ideologies || []).map((ideology) => (
-                    <div key={ideology.id} className="rounded-full border border-slate-300 bg-white px-3 py-1 text-sm text-slate-700">
-                      <span className="font-bold">{ideology.name}</span>
-                      <button onClick={() => removeIdeology(ideology.id)} className="ml-2 text-red-500">✕</button>
+                <div className="mt-3 space-y-2">
+                  {(activeScenarioData.ideologyLibrary || []).map((ideology) => (
+                    <div key={ideology.id} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-bold text-slate-900">{ideology.icon} {ideology.name}</div>
+                          {ideology.description && <div className="mt-1 text-xs text-slate-500">{ideology.description}</div>}
+                        </div>
+                        <button onClick={() => removeIdeology(ideology.id)} className="text-red-500">✕</button>
+                      </div>
+                      {(ideology.interactionRules || []).length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {(ideology.interactionRules || []).map((rule, index) => (
+                            <div key={index} className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] text-indigo-700">
+                              {rule.description || `Lose ${rule.penaltyPerSeat}% for each ${getIdeologyById(activeScenarioData.ideologyLibrary, rule.targetIdeologyId)?.name || 'target'} seat`}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1903,14 +1976,21 @@
                         <label className="sg-label">Poll %</label>
                         <input type="number" step="0.1" value={party.poll} onChange={(e) => updatePartyPoll(party.id, e.target.value)} style={{ width: '78px', fontFamily: 'monospace', color: 'var(--gold-hi)' }}/>
                       </div>
-                      <div className="sg-faction-field">
-                        <label className="sg-label">Ideology</label>
-                        <select value={party.ideologyId || ''} onChange={(e) => updatePartyIdeology(party.id, e.target.value || null)} style={{ minWidth: '140px', padding: '0.45rem 0.6rem' }}>
-                          <option value="">— No ideology —</option>
-                          {(activeScenarioData.ideologies || []).map((ideology) => (
-                            <option key={ideology.id} value={ideology.id}>{ideology.name}</option>
+                      <div className="sg-faction-field" style={{ minWidth: '220px' }}>
+                        <label className="sg-label">Ideologies</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {IDEOLOGY_CATEGORY_DEFINITIONS.map((category) => (
+                            <div key={category.key}>
+                              <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{category.label}</label>
+                              <select value={party.ideologyAssignments?.[category.key] || ''} onChange={(e) => updatePartyIdeologyAssignment(party.id, category.key, e.target.value || '')} style={{ width: '100%', padding: '0.35rem 0.45rem' }}>
+                                <option value="">— None —</option>
+                                {(activeScenarioData.ideologyLibrary || []).map((ideology) => (
+                                  <option key={ideology.id} value={ideology.id}>{ideology.name}</option>
+                                ))}
+                              </select>
+                            </div>
                           ))}
-                        </select>
+                        </div>
                       </div>
                       <div className="sg-faction-field" style={{ marginLeft: 'auto' }}>
                         <label className="sg-label">&nbsp;</label>
@@ -2024,7 +2104,7 @@
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   {seatShares.map(party => {
                     const voteShare = totalValidVotes > 0 ? (party.votes / totalValidVotes) * 100 : 0;
-                    const ideology = (activeScenarioData.ideologies || []).find((item) => item.id === party.ideologyId);
+                    const assignedIdeologies = getPartyAssignedIdeologies(party, activeScenarioData.ideologyLibrary);
                     const showDetails = !party.isTemporary;
                     return (
                       <div key={party.id} className="w-full">
@@ -2048,18 +2128,18 @@
                             </button>
                             {expandedPartyDetails[party.id] && (
                               <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                                {ideology ? (
-                                  <div>
-                                    <div className="font-semibold text-slate-900">{ideology.name}</div>
-                                    {ideology.description && <div className="mt-1 text-xs text-slate-500">{ideology.description}</div>}
-                                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                                      {IDEOLOGY_CATEGORIES.map((category) => (
-                                        <div key={category} className="rounded-lg border border-slate-200 bg-white px-2 py-1">
-                                          <div className="uppercase tracking-[0.2em] text-slate-500">{category}</div>
-                                          <div className="font-mono text-slate-800">{ideology[category]}</div>
+                                {assignedIdeologies.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {assignedIdeologies.map(({ categoryLabel, ideology }) => (
+                                      <div key={`${party.id}-${ideology.id}`} className="rounded-lg border border-slate-200 bg-white px-2 py-2">
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                          <span>{ideology.icon}</span>
+                                          <span>{ideology.name}</span>
+                                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{categoryLabel}</span>
                                         </div>
-                                      ))}
-                                    </div>
+                                        {ideology.description && <div className="mt-1 text-xs text-slate-500">{ideology.description}</div>}
+                                      </div>
+                                    ))}
                                   </div>
                                 ) : <div>No ideology assigned yet.</div>}
                               </div>
@@ -2075,7 +2155,7 @@
                   <h4 className={`text-2xl font-bold mb-1 ${isMajority ? 'text-green-700' : 'text-red-700'}`}>{isMajority ? 'Majority Government Formed' : 'Hung Parliament'}</h4>
                   <p className="text-lg font-mono font-semibold text-slate-800 mt-2">{coalitionSeats} / {majorityTarget} Seats Required</p>
                   {(() => {
-                    const cohesion = calculateGovernmentCohesion(coalitionMembers, activeScenarioData.ideologies);
+                    const cohesion = calculateGovernmentCohesion(coalitionMembers, activeScenarioData.ideologyLibrary);
                     return cohesion !== null ? <p className="mt-2 text-sm font-semibold text-slate-700">Government Cohesion: {cohesion}%</p> : null;
                   })()}
                 </div>

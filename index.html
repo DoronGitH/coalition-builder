@@ -658,6 +658,7 @@
       const [showExport, setShowExport] = useState(false);
       const [saveStatus, setSaveStatus] = useState('');
       const [ideologyDraft, setIdeologyDraft] = useState({ name: '', icon: '⚖️', description: '', interactionRules: [{ targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] });
+      const [editingIdeologyId, setEditingIdeologyId] = useState(null);
 
       useEffect(() => {
         if (activeC && db[activeC] && !db[activeC][activeS]) {
@@ -677,31 +678,65 @@
         updateDb(newDb);
       };
 
+      const resetIdeologyDraft = () => {
+        setIdeologyDraft({ name: '', icon: '⚖️', description: '', interactionRules: [{ targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] });
+        setEditingIdeologyId(null);
+      };
+
+      const startEditingIdeology = (ideology) => {
+        setEditingIdeologyId(ideology?.id || null);
+        setIdeologyDraft({
+          name: ideology?.name || '',
+          icon: ideology?.icon || '⚖️',
+          description: ideology?.description || '',
+          interactionRules: Array.isArray(ideology?.interactionRules) && ideology.interactionRules.length
+            ? ideology.interactionRules.map((rule) => ({ ...rule }))
+            : [{ targetIdeologyId: '', penaltyPerSeat: 0, description: '' }]
+        });
+      };
+
       const addIdeology = () => {
         if (!ideologyDraft.name.trim()) return;
-        const nextIdeologies = [
-          ...(activeScenarioConfig.ideologyLibrary || []),
-          {
-            id: `ideology-${Date.now()}`,
-            name: ideologyDraft.name.trim(),
-            icon: ideologyDraft.icon.trim() || '⚖️',
-            description: ideologyDraft.description.trim(),
-            interactionRules: (ideologyDraft.interactionRules || [])
-              .filter((rule) => rule.targetIdeologyId && rule.targetIdeologyId.trim())
-              .map((rule) => ({
-                targetIdeologyId: rule.targetIdeologyId,
-                penaltyPerSeat: Number(rule.penaltyPerSeat) || 0,
-                description: rule.description.trim()
-              }))
-          }
-        ];
+        const nextIdeologies = editingIdeologyId
+          ? (activeScenarioConfig.ideologyLibrary || []).map((ideology) => ideology.id === editingIdeologyId
+            ? {
+                ...ideology,
+                name: ideologyDraft.name.trim(),
+                icon: ideologyDraft.icon.trim() || '⚖️',
+                description: ideologyDraft.description.trim(),
+                interactionRules: (ideologyDraft.interactionRules || [])
+                  .filter((rule) => rule.targetIdeologyId && rule.targetIdeologyId.trim())
+                  .map((rule) => ({
+                    targetIdeologyId: rule.targetIdeologyId,
+                    penaltyPerSeat: Number(rule.penaltyPerSeat) || 0,
+                    description: rule.description.trim()
+                  }))
+              }
+            : ideology)
+          : [
+              ...(activeScenarioConfig.ideologyLibrary || []),
+              {
+                id: `ideology-${Date.now()}`,
+                name: ideologyDraft.name.trim(),
+                icon: ideologyDraft.icon.trim() || '⚖️',
+                description: ideologyDraft.description.trim(),
+                interactionRules: (ideologyDraft.interactionRules || [])
+                  .filter((rule) => rule.targetIdeologyId && rule.targetIdeologyId.trim())
+                  .map((rule) => ({
+                    targetIdeologyId: rule.targetIdeologyId,
+                    penaltyPerSeat: Number(rule.penaltyPerSeat) || 0,
+                    description: rule.description.trim()
+                  }))
+              }
+            ];
         updateScenarioIdeologies(nextIdeologies);
-        setIdeologyDraft({ name: '', icon: '⚖️', description: '', interactionRules: [{ targetIdeologyId: '', penaltyPerSeat: 0, description: '' }] });
+        resetIdeologyDraft();
       };
 
       const removeIdeology = (id) => {
         const nextIdeologies = (activeScenarioConfig.ideologyLibrary || []).filter((ideology) => ideology.id !== id);
         updateScenarioIdeologies(nextIdeologies);
+        if (editingIdeologyId === id) resetIdeologyDraft();
       };
 
       const updatePartyIdeologyAssignment = (partyId, categoryKey, ideologyId) => {
@@ -1110,7 +1145,7 @@
       return (
         <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col font-sans">
           <div className="bg-slate-950 p-4 flex justify-between items-center border-b border-slate-800">
-            <h2 className="text-2xl font-bold text-white flex items-center"><span className="mr-3">⚙️</span> Visual Database Editor</h2>
+            <h2 className="text-2xl font-bold text-white flex items-center"><span className="mr-3">⚙️</span> Settings</h2>
             <div className="flex gap-4">
               <button onClick={handleSaveToGitHub} className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded font-bold">💾 Save to GitHub</button>
               <button onClick={() => setShowExport(true)} className="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded font-bold">📤 Export JSON</button>
@@ -1204,7 +1239,7 @@
                       </div>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
                         <input type="text" value={ideologyDraft.name} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, name: e.target.value })} placeholder="Ideology name" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
-                        <input type="text" value={ideologyDraft.icon} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, icon: e.target.value })} placeholder="Icon (emoji or symbol)" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
+                        <input type="text" value={ideologyDraft.icon} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, icon: e.target.value })} placeholder="Emoji, symbol, or image URL" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm" />
                       </div>
                       <textarea value={ideologyDraft.description} onChange={(e) => setIdeologyDraft({ ...ideologyDraft, description: e.target.value })} placeholder="Describe the ideology and its role in the preset" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm mb-3" rows="3" />
                       <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-3 mb-3">
@@ -1225,16 +1260,29 @@
                           </div>
                         ))}
                       </div>
-                      <button onClick={addIdeology} className="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded font-bold">✚ Add Ideology</button>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={addIdeology} className="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded font-bold">{editingIdeologyId ? '✓ Save Changes' : '✚ Add Ideology'}</button>
+                        {editingIdeologyId && (
+                          <button onClick={resetIdeologyDraft} className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded font-bold">Cancel</button>
+                        )}
+                      </div>
                       <div className="mt-3 space-y-2">
                         {(activeScenarioConfig.ideologyLibrary || []).map((ideology) => (
                           <div key={ideology.id} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-300">
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <div className="font-bold text-white">{ideology.icon} {ideology.name}</div>
+                                <div className="flex items-center gap-2 font-bold text-white">
+                                  <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-slate-800">
+                                    {renderLogo(ideology.icon, "w-5 h-5 object-contain")}
+                                  </span>
+                                  <span>{ideology.name}</span>
+                                </div>
                                 {ideology.description && <div className="mt-1 text-xs text-slate-400">{ideology.description}</div>}
                               </div>
-                              <button onClick={() => removeIdeology(ideology.id)} className="text-red-400">✕</button>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => startEditingIdeology(ideology)} className="text-cyan-400 text-sm font-semibold">Edit</button>
+                                <button onClick={() => removeIdeology(ideology.id)} className="text-red-400">✕</button>
+                              </div>
                             </div>
                             {(ideology.interactionRules || []).length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-2">
@@ -2209,7 +2257,7 @@
                                     {assignedIdeologies.map(({ categoryLabel, ideology }) => (
                                       <div key={`${party.id}-${ideology.id}`} className="rounded-lg border border-slate-200 bg-white px-2 py-2">
                                         <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                                          <span>{ideology.icon}</span>
+                                          {renderLogo(ideology.icon, "text-xl")}
                                           <span>{ideology.name}</span>
                                           <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{categoryLabel}</span>
                                         </div>

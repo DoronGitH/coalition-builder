@@ -12,7 +12,13 @@
           "corePolicies": "Zionism, Settlement Expansion, Judicial Overhaul, Benjamin Netanyahu",
           "redLines": "",
           "poll": 21,
-          "votes": 21
+          "votes": 21,
+          "ideologyAssignments": {
+            "social": "ideology-1785146936093",
+            "economic": "",
+            "security": "",
+            "cultural": ""
+          }
         },
         {
           "id": 2,
@@ -550,6 +556,15 @@
           "label": "Arab Interests",
           "aliases": "",
           "rules": []
+        }
+      ],
+      "ideologyLibrary": [
+        {
+          "id": "ideology-1785146936093",
+          "name": "cat",
+          "icon": "⚖️",
+          "description": "D",
+          "interactionRules": []
         }
       ]
     }

@@ -668,7 +668,6 @@
 
       const updateDb = (newDb) => {
         setDb(newDb);
-        localStorage.setItem('coalitionDb', JSON.stringify(newDb));
       };
 
       const updateScenarioIdeologies = (nextIdeologies) => {
@@ -1102,10 +1101,8 @@
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.message || 'Save failed');
 
-          localStorage.setItem('coalitionDb', JSON.stringify(exportDb));
           setSaveStatus(`Saved to ${payload.path}`);
         } catch (error) {
-          localStorage.setItem('coalitionDb', JSON.stringify(exportDb));
           setSaveStatus(`Save failed: ${error.message}`);
         }
       };
@@ -1333,6 +1330,11 @@
                             </div>
                             <div className="text-[10px] text-slate-500">Core Policies: {splitTagEntries(party.corePolicies).length}</div>
                             <div className="text-[10px] text-slate-500">Red Lines: {splitTagEntries(party.redLines).length}</div>
+                          </div>
+
+                          <div className="col-span-12 mt-2 pt-3 border-t border-slate-700/60">
+                            <label className="text-[10px] font-bold text-cyan-400 uppercase block mb-2">Party Details</label>
+                            <textarea value={party.details || ''} onChange={(e) => updateParty(party.id, 'details', e.target.value)} placeholder="Add a short description for this party profile" rows="3" className="w-full bg-slate-900 text-white px-3 py-2 rounded border border-slate-700 text-sm resize-none" />
                           </div>
 
                           <div className="col-span-12 mt-2 pt-3 border-t border-slate-700/60">
@@ -1767,14 +1769,10 @@
       useEffect(() => {
         const loadDb = async () => {
           await window.loadInitialDb();
-          const saved = localStorage.getItem('coalitionDb');
-          if (saved) {
-            try {
-              setDb(JSON.parse(saved));
-              return;
-            } catch (error) {
-              console.warn('Could not parse local DB snapshot', error);
-            }
+          try {
+            localStorage.removeItem('coalitionDb');
+          } catch (error) {
+            console.warn('Could not clear stale local DB snapshot', error);
           }
           setDb(window.INITIAL_DB || {});
         };
@@ -1914,7 +1912,7 @@
         const handleScenarioChange = (country, scenario) => {
           setSelectedCountry(country); setSelectedScenario(scenario);
           if (country === 'Custom') {
-            setParties([{ id: 1, name: 'New Party', color: '#94a3b8', logo: '⬜', corePolicies: '', redLines: '', poll: 0, votes: 0, isTemporary: true, ideologyAssignments: buildDefaultPartyIdeologyAssignments() }]);
+            setParties([{ id: 1, name: 'New Party', color: '#94a3b8', logo: '⬜', corePolicies: '', redLines: '', poll: 0, votes: 0, details: '', isTemporary: true, ideologyAssignments: buildDefaultPartyIdeologyAssignments() }]);
             setTotalSeats(100); setThreshold(5); return;
           }
           if (db[country] && db[country][scenario]) {
@@ -1938,9 +1936,9 @@
             next[country][scenario].seats = totalSeats;
             next[country][scenario].threshold = threshold;
             try {
-              localStorage.setItem('coalitionDb', JSON.stringify(next));
+              localStorage.removeItem('coalitionDb');
             } catch (error) {
-              console.warn('Could not persist coalition DB to localStorage', error);
+              console.warn('Could not clear stale local DB snapshot', error);
             }
             return next;
           });
@@ -1977,9 +1975,9 @@
             }
             next[country][scenario].ideologyLibrary = nextIdeologies;
             try {
-              localStorage.setItem('coalitionDb', JSON.stringify(next));
+              localStorage.removeItem('coalitionDb');
             } catch (error) {
-              console.warn('Could not persist ideology library to localStorage', error);
+              console.warn('Could not clear stale local DB snapshot', error);
             }
             return next;
           });
@@ -2050,6 +2048,7 @@
             redLines: '',
             votes: 0,
             poll: 0,
+            details: '',
             isTemporary: true,
             ideologyAssignments: buildDefaultPartyIdeologyAssignments()
           }];
@@ -2247,25 +2246,33 @@
                         </button>
                         {showDetails && (
                           <div className="mt-2">
-                            <button onClick={() => setExpandedPartyDetails(prev => ({ ...prev, [party.id]: !prev[party.id] }))} className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 hover:text-slate-700">
-                              {expandedPartyDetails[party.id] ? 'Hide details' : 'Show details'}
+                            <button onClick={() => setExpandedPartyDetails(prev => ({ ...prev, [party.id]: !prev[party.id] }))} className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600 hover:text-slate-900">
+                              <span>{expandedPartyDetails[party.id] ? '▾' : '▸'}</span>
+                              <span>{expandedPartyDetails[party.id] ? 'Hide profile' : 'Show profile'}</span>
                             </button>
                             {expandedPartyDetails[party.id] && (
                               <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                                {assignedIdeologies.length > 0 ? (
-                                  <div className="space-y-2">
-                                    {assignedIdeologies.map(({ categoryLabel, ideology }) => (
-                                      <div key={`${party.id}-${ideology.id}`} className="rounded-lg border border-slate-200 bg-white px-2 py-2">
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                                          {renderLogo(ideology.icon, "text-xl")}
-                                          <span>{ideology.name}</span>
-                                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{categoryLabel}</span>
+                                <div className="mb-3">
+                                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">Ideologies</div>
+                                  {assignedIdeologies.length > 0 ? (
+                                    <div className="space-y-2">
+                                      {assignedIdeologies.map(({ categoryLabel, ideology }) => (
+                                        <div key={`${party.id}-${ideology.id}`} className="rounded-lg border border-slate-200 bg-white px-2 py-2">
+                                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                            {renderLogo(ideology.icon, "text-xl")}
+                                            <span>{ideology.name}</span>
+                                            <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{categoryLabel}</span>
+                                          </div>
+                                          {ideology.description && <div className="mt-1 text-xs text-slate-500">{ideology.description}</div>}
                                         </div>
-                                        {ideology.description && <div className="mt-1 text-xs text-slate-500">{ideology.description}</div>}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : <div>No ideology assigned yet.</div>}
+                                      ))}
+                                    </div>
+                                  ) : <div className="rounded-lg border border-dashed border-slate-300 bg-white/70 p-2 text-xs text-slate-500">No ideology assigned yet.</div>}
+                                </div>
+                                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-1">Details</div>
+                                  <div className="text-sm text-slate-700 whitespace-pre-wrap">{party.details ? party.details : 'No details provided for this party yet.'}</div>
+                                </div>
                               </div>
                             )}
                           </div>
